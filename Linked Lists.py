@@ -37,6 +37,7 @@ class LinkedStack:
         self._size -= 1
         return answer
 
+
 """
 data = LinkedStack()
 data.push(4)
@@ -89,6 +90,7 @@ class LinkedQueue:
         if self.is_empty():
             self._tail = None
         return answer
+
 
 class CircularQueue:
     class _Node:
@@ -159,7 +161,7 @@ class _DoublyLinkedBase:
         return self._size
 
     def is_empty(self):
-        return  self._size == 0
+        return self._size == 0
 
     def _insert_between(self, element, predecessor, successor):
         newest = self._Node(element, predecessor, successor)
@@ -206,6 +208,7 @@ class LinkedDeque(_DoublyLinkedBase):
         last = self._delete_node(self._trailer._prev)
         return last
 
+
 """
 data = LinkedDeque()
 print(len(data))
@@ -219,6 +222,7 @@ data.delete_last()
 print(data.first())
 print(data.last())
 """
+
 
 class PositionalList(_DoublyLinkedBase):
     class Position:
@@ -310,10 +314,31 @@ class PositionalList(_DoublyLinkedBase):
         node._element = element
         return node._element
 
+
 def insertion_sort(L):
     marker = L.first()
-    pivot = L.after(marker)
-    walk = marker
     while marker != L.last():
-        while walk != L.first and walk.element() > pivot.element:
-            walk = L.before(walk)
+        pivot = L.after(marker)
+        value = pivot.element()
+        if value > marker.element():
+            marker = pivot
+        else:
+            walk = marker
+            while walk != L.first() and L.before(walk).element() > pivot.element():
+                walk = L.before(walk)
+            L.delete(pivot)
+            L.add_before(walk, value)
+
+
+"""
+L = PositionalList()
+L.add_first(5)
+L.add_last(4)
+L.add_first(6)
+L.add_last(3)
+print(L.first().element())
+print(L.last().element())
+insertion_sort(L)
+print(L.first().element())
+print(L.last().element())
+"""
