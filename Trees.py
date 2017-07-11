@@ -407,7 +407,7 @@ class TreeMap(LinkedBinaryTree, MapBase):
             return None
         else:
             p = self._subtree_search(self.root(), k)
-            # self._rebalance_access(p)
+            self._rebalance_access(p)
             return p
 
     def find_min(self):
@@ -443,7 +443,7 @@ class TreeMap(LinkedBinaryTree, MapBase):
             raise ('Key Error: ' + repr(k))
         else:
             p = self._subtree_search(self.root(), k)
-            # self._rebalance_access(p)
+            self._rebalance_access(p)
             if k != p.key():
                 raise ('Key Error: ' + repr(k))
             return p.value()
@@ -455,7 +455,7 @@ class TreeMap(LinkedBinaryTree, MapBase):
             p = self._subtree_search(self.root(), k)
             if p.key() == k:
                 p.element()._value = v
-                # self._rebalance_access(p)
+                self._rebalance_access(p)
                 return
             else:
                 item = self._Item(k, v)
@@ -463,7 +463,7 @@ class TreeMap(LinkedBinaryTree, MapBase):
                     leaf = self._add_right(p, item)
                 else:
                     leaf = self._add_left(p, item)
-                    # self._rebalance_insert(leaf)
+                    self._rebalance_insert(leaf)
 
     def __iter__(self):
         p = self.first()
@@ -479,7 +479,7 @@ class TreeMap(LinkedBinaryTree, MapBase):
             p = replacement
         parent = self.parent(p)
         self._delete(p)
-        # self._rebalance_delete(parent)
+        self._rebalance_delete(parent)
 
     def __delitem__(self, k):
         if not self.is_empty():
@@ -487,5 +487,100 @@ class TreeMap(LinkedBinaryTree, MapBase):
             if k == p.key():
                 self.delete(p)
                 return
-            # self._rebalance_access(p)
+            self._rebalance_access(p)
         raise ('Key Error: ' + repr(k))
+
+    def _rebalance_access(self, p):
+        pass
+
+    def _rebalance_insert(self, p):
+        pass
+
+    def _rebalance_delete(self, p):
+        pass
+
+    def _relink(self, parent, child, make_left_child):
+        if make_left_child:
+            parent._left = child
+        else:
+            parent._right = child
+        if child is not None:
+            child._parent = parent
+
+    def _rotate(self, p):
+        x = p._node
+        y = x._parent
+        z = y._parent
+        if z is None:
+            self._root = x
+            x._parent = None
+        else:
+            self._relink(z, x, y == z._left)
+        if x == y._left:
+            self._relink(y, x._right, True)
+            self._relink(x, y, False)
+        else:
+            self._relink(y, x._left, False)
+            self._relink(x, y, True)
+
+    def _restructure(self, x):
+        y = self.parent(x)
+        z = self.parent(y)
+        if (x == self.right(y)) == (y == self.right(z)):
+            self._rotate(y)
+            return y
+        else:
+            self._rotate(x)
+            self._rotate(x)
+            return x
+
+
+class AVLTreeMap(TreeMap):
+    class _Node(TreeMap._Node):
+        __slots__ = '_height'
+
+        def __init__(self, element, parent=None, left=None, right=None):
+            super().__init__(element, parent, left, right)
+            self._height = 0
+
+        def left_height(self):
+            return self._left._height if self._left is not None else 0
+
+        def right_height(self):
+            return self._right._height if self._right is not None else 0
+
+    def _recompute_height(self, p):
+        p._node._height = 1 + max(p._node.left_height(), p._node.right_height())
+
+    def _isbalanced(self, p):
+        return abs(p._node.left_height() - p._node.right_height()) <= 1
+
+    def _tall_child(self, p, favorleft=False):
+        if p._node.left_height() + (1 if favorleft else 0) > p._node.right_height():
+            return self.left(p)
+        else:
+            return self.right(p)
+
+    def _tall_grandchild(self, p):
+        child = self._tall_child(p)
+        alignment = (child == self.left(p))
+        return self._tall_child(child, alignment)
+
+    def _rebalance(self, p):
+        while p is not None:
+            old_height = p._node._height
+            if not self._isbalanced(p):
+                p = self._restructure(self._tall_grandchild(p))
+                self._recompute_height(self.left(p))
+                self._recompute_height(self.right(p))
+            self._recompute_height(p)
+            if old_height == p._node._height:
+                p = None
+            else:
+                p = self.parent(p)
+
+    def _rebalance_insert(self, p):
+        self._rebalance(p)
+
+    def _rebalance_delete(self, p):
+        self._rebalance(p)
